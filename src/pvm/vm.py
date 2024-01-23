@@ -2,6 +2,7 @@
 Implements the PhiVM class for executing a stack-based virtual machine's instructions.
 """
 
+import numpy as np
 
 from src.pvm.configuration import Configuration
 from src.pvm.errors import (
@@ -9,8 +10,8 @@ from src.pvm.errors import (
     StackOverflowError,
     StackUnderflowError,
 )
-from src.pvm.types import InstOperands, Memory, Word
 from src.pvm.instructions import Instruction
+from src.pvm.types import InstOperands, Memory, Word
 
 
 class PhiVM:
@@ -55,6 +56,8 @@ class PhiVM:
             self._add()
         elif instruction == Instruction.SUB:
             self._sub()
+        elif instruction == Instruction.MUL:
+            self._mul()
         else:
             raise InvalidInstructionError("Instruction not supported")
 
@@ -155,5 +158,49 @@ class PhiVM:
 
         if self.stack_pointer >= self.stack_start + self.stack_size:
             raise StackOverflowError("Stack overflow on subtract")
+        self.memory[self.stack_pointer] = result
+        self.stack_pointer += 1
+
+    def _mul(self) -> None:
+        """
+        Executes the MUL instruction, which multiplies the top two elements on the stack.
+
+        The result of the multiplication is pushed back onto the stack. This method also
+        updates the VM flags based on the result of the multiplication.
+
+        Raises:
+            StackUnderflowError: If there are not enough elements on the stack to perform
+            the operation.
+            StackOverflowError: If the result cannot be pushed onto the stack because it is full.
+        """
+
+        if self.stack_pointer < self.stack_start + 2:
+            raise StackUnderflowError(
+                "Not enough elements on the stack to perform multiply"
+            )
+
+        # Pop the top two elements from the stack
+        self.stack_pointer -= 1
+        operand2 = self.memory[self.stack_pointer]
+        self.stack_pointer -= 1
+        operand1 = self.memory[self.stack_pointer]
+
+        # Convert operands to Python's native int for overflow checking
+        python_int_result = int(operand1) * int(operand2)
+
+        # Check for overflow
+        max_int64 = np.iinfo(np.int64).max
+        min_int64 = np.iinfo(np.int64).min
+        self.overflow_flag = not min_int64 <= python_int_result <= max_int64
+
+        # Perform the multiplication
+        result = operand1 * operand2
+
+        # Update VM flags based on the result
+        self.sign_flag = 1 if result < 0 else 0
+
+        # Push the result back onto the stack, if space permits
+        if self.stack_pointer >= self.stack_start + self.stack_size:
+            raise StackOverflowError("Stack overflow on multiply")
         self.memory[self.stack_pointer] = result
         self.stack_pointer += 1

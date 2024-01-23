@@ -13,4 +13,5 @@ class Instruction(Enum):
     PUSH = "PUSH"
     ADD = "ADD"
     SUB = "SUB"
+    MUL = "MUL"
     # Additional instructions can be added here as needed

@@ -1,8 +1,9 @@
 import unittest
-from src.pvm.vm import PhiVM
+
 from src.pvm.configuration import Configuration
 from src.pvm.instructions import Instruction
 from src.pvm.types import Word
+from src.pvm.vm import PhiVM
 
 
 class TestPushOp(unittest.TestCase):
