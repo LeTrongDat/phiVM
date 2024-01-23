@@ -34,7 +34,6 @@ class PhiVM:
         self.stack_size: Word = config.stack_size
 
         self.sign_flag = 0  # 1 if result is negative
-        self.carry_flag = 0  # 1 if there's an arithmetic carry
         self.overflow_flag = 0  # 1 if there's an arithmetic overflow
 
     def execute_instruction(
@@ -54,6 +53,8 @@ class PhiVM:
             self._push(operands)
         elif instruction == Instruction.ADD:
             self._add()
+        elif instruction == Instruction.SUB:
+            self._sub()
         else:
             raise InvalidInstructionError("Instruction not supported")
 
@@ -105,7 +106,6 @@ class PhiVM:
 
         # Update flags
         self.sign_flag = 1 if result < 0 else 0
-        self.carry_flag = 1 if operand1 > 0 and operand2 > 0 > result else 0
         self.overflow_flag = (
             1
             if (operand1 > 0 and operand2 > 0 > result)
@@ -115,5 +115,45 @@ class PhiVM:
 
         if self.stack_pointer >= self.stack_start + self.stack_size:
             raise StackOverflowError("Stack overflow on add")
+        self.memory[self.stack_pointer] = result
+        self.stack_pointer += 1
+
+    def _sub(self) -> None:
+        """
+        Executes the SUB instruction, which subtracts the top stack element from the next top
+        element.
+
+        The result is pushed back onto the stack. This method updates the VM flags
+        based on the result of the subtraction.
+
+        Raises:
+            StackUnderflowError: If there are not enough elements on the stack to perform
+            the operation.
+            StackOverflowError: If the result cannot be pushed onto the stack because it is full.
+        """
+        if self.stack_pointer < self.stack_start + 2:
+            raise StackUnderflowError(
+                "Not enough elements on the stack to perform subtract"
+            )
+
+        # Pop the top two elements from the stack
+        self.stack_pointer -= 1
+        operand2 = self.memory[self.stack_pointer]
+        self.stack_pointer -= 1
+        operand1 = self.memory[self.stack_pointer]
+
+        # Perform the subtraction
+        result = operand1 - operand2
+
+        self.sign_flag = 1 if result < 0 else 0
+        self.overflow_flag = (
+            1
+            if (operand1 < 0 < result and operand2 > 0)
+            or (operand1 > 0 > result and operand2 < 0)
+            else 0
+        )
+
+        if self.stack_pointer >= self.stack_start + self.stack_size:
+            raise StackOverflowError("Stack overflow on subtract")
         self.memory[self.stack_pointer] = result
         self.stack_pointer += 1

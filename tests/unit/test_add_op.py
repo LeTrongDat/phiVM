@@ -35,18 +35,6 @@ class TestAddOperation(unittest.TestCase):
         # Check the overflow flag
         self.assertTrue(vm.overflow_flag, "Overflow flag should be set")
 
-    def test_add_carry_flag(self) -> None:
-        vm = PhiVM(self.config)
-        max_int64 = np.iinfo(np.int64).max
-        program = [
-            (Instruction.PUSH, [Word(max_int64)]),
-            (Instruction.PUSH, [Word(1)]),
-            (Instruction.ADD, []),
-        ]
-        vm.run(program)
-        # Check the carry flag
-        self.assertTrue(vm.carry_flag, "Carry flag should be set")
-
     def test_add_sign_flag(self) -> None:
         vm = PhiVM(self.config)
         program = [
