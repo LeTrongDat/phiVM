@@ -1,0 +1,14 @@
+# Virtual environments
+.env/
+
+# Editor configuration
+.vscode/
+.idea/
+
+# System configuration
+__pycache__/
+*.pyc
+*~
+
+# MacOS configuration
+.DS_Store
