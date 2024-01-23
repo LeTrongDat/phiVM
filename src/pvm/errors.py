@@ -17,3 +17,7 @@ class ConfigurationError(Exception):
 
 class InvalidInstructionError(Exception):
     """Exception raised for invalid VM instruction."""
+
+
+class DivisionByZeroError(Exception):
+    """Exception raised for division by zero instruction."""

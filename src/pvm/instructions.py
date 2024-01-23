@@ -14,4 +14,5 @@ class Instruction(Enum):
     ADD = "ADD"
     SUB = "SUB"
     MUL = "MUL"
+    DIV = "DIV"
     # Additional instructions can be added here as needed

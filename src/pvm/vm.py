@@ -6,6 +6,7 @@ import numpy as np
 
 from src.pvm.configuration import Configuration
 from src.pvm.errors import (
+    DivisionByZeroError,
     InvalidInstructionError,
     StackOverflowError,
     StackUnderflowError,
@@ -58,6 +59,8 @@ class PhiVM:
             self._sub()
         elif instruction == Instruction.MUL:
             self._mul()
+        elif instruction == Instruction.DIV:
+            self._div()
         else:
             raise InvalidInstructionError("Instruction not supported")
 
@@ -202,5 +205,47 @@ class PhiVM:
         # Push the result back onto the stack, if space permits
         if self.stack_pointer >= self.stack_start + self.stack_size:
             raise StackOverflowError("Stack overflow on multiply")
+        self.memory[self.stack_pointer] = result
+        self.stack_pointer += 1
+
+    def _div(self) -> None:
+        """
+        Executes the DIV instruction, which divides the second top element on the stack
+        by the top element.
+
+        The result of the division is pushed back onto the stack. In case of division
+        by zero, a DivisionByZeroError is raised. This method also updates the VM
+        flags based on the result of the division.
+
+        Raises:
+            StackUnderflowError: If there are not enough elements on the stack to perform division.
+            DivisionByZeroError: If the division operation attempts to divide by zero.
+            StackOverflowError: If the result cannot be pushed onto the stack because it is full.
+        """
+        if self.stack_pointer < self.stack_start + 2:
+            raise StackUnderflowError(
+                "Not enough elements on the stack to perform division"
+            )
+
+        # Pop the top two elements for division
+        self.stack_pointer -= 1
+        divisor = self.memory[self.stack_pointer]
+        self.stack_pointer -= 1
+        dividend = self.memory[self.stack_pointer]
+
+        # Check for division by zero
+        if divisor == 0:
+            raise DivisionByZeroError("Attempted division by zero")
+
+        # Perform the division
+        result = dividend // divisor
+
+        # Update VM flags based on the result (update as needed)
+        self.sign_flag = 1 if result < 0 else 0
+        self.overflow_flag = 0  # Overflow is not typically an issue in integer division
+
+        # Push the result back onto the stack, if space permits
+        if self.stack_pointer >= self.stack_start + self.stack_size:
+            raise StackOverflowError("Stack overflow on division")
         self.memory[self.stack_pointer] = result
         self.stack_pointer += 1
