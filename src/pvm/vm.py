@@ -4,7 +4,11 @@ Implements the PhiVM class for executing a stack-based virtual machine's instruc
 
 
 from src.pvm.configuration import Configuration
-from src.pvm.errors import InvalidInstructionError, StackOverflowError
+from src.pvm.errors import (
+    InvalidInstructionError,
+    StackOverflowError,
+    StackUnderflowError,
+)
 from src.pvm.types import InstOperands, Memory, Word
 from src.pvm.instructions import Instruction
 
@@ -29,6 +33,10 @@ class PhiVM:
         self.stack_start: Word = config.stack_start
         self.stack_size: Word = config.stack_size
 
+        self.sign_flag = 0  # 1 if result is negative
+        self.carry_flag = 0  # 1 if there's an arithmetic carry
+        self.overflow_flag = 0  # 1 if there's an arithmetic overflow
+
     def execute_instruction(
         self, instruction: Instruction, operands: InstOperands
     ) -> None:
@@ -44,8 +52,10 @@ class PhiVM:
         """
         if instruction == Instruction.PUSH:
             self._push(operands)
-            return
-        raise InvalidInstructionError("Instruction not supported")
+        elif instruction == Instruction.ADD:
+            self._add()
+        else:
+            raise InvalidInstructionError("Instruction not supported")
 
     def run(self, program: list) -> None:
         """
@@ -70,4 +80,40 @@ class PhiVM:
         if self.stack_pointer >= self.stack_start + self.stack_size:
             raise StackOverflowError("Stack overflow")
         self.memory[self.stack_pointer] = operands[0]
+        self.stack_pointer += 1
+
+    def _add(self) -> None:
+        """
+        Executes the ADD instruction which pops the top two elements from the stack,
+        adds them together, and pushes the result back onto the stack.
+
+        Raises:
+            StackUnderflowError: If there are fewer than two elements on the stack.
+            StackOverflowError: If the result cannot be pushed onto the stack because it is full.
+        """
+        if self.stack_pointer < self.stack_start + 2:
+            raise StackUnderflowError("Not enough elements on the stack to perform add")
+
+        # Pop the top two elements and add them
+        self.stack_pointer -= 1
+        operand2 = self.memory[self.stack_pointer]
+        self.stack_pointer -= 1
+        operand1 = self.memory[self.stack_pointer]
+
+        # Convert to native Python ints for flag calculations
+        result = operand1 + operand2
+
+        # Update flags
+        self.sign_flag = 1 if result < 0 else 0
+        self.carry_flag = 1 if operand1 > 0 and operand2 > 0 > result else 0
+        self.overflow_flag = (
+            1
+            if (operand1 > 0 and operand2 > 0 > result)
+            or (operand1 < 0 and operand2 < 0 < result)
+            else 0
+        )
+
+        if self.stack_pointer >= self.stack_start + self.stack_size:
+            raise StackOverflowError("Stack overflow on add")
+        self.memory[self.stack_pointer] = result
         self.stack_pointer += 1

@@ -11,4 +11,5 @@ class Instruction(Enum):
     """
 
     PUSH = "PUSH"
+    ADD = "ADD"
     # Additional instructions can be added here as needed
